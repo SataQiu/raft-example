@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -12,6 +14,7 @@ type RaftConf struct {
 	IP        string `mapstructure:"ip"`
 	Port      int    `mapstructure:"port"`
 	VolumeDir string `mapstructure:"volume_dir"`
+	Peers     string `mapstructure:"peers"`
 }
 
 // ServerConf defines the configuration for HTTP server
@@ -46,10 +49,49 @@ func Load() *Config {
 			IP:        v.GetString(RaftIP),
 			Port:      v.GetInt(RaftPort),
 			VolumeDir: v.GetString(RaftVolDir),
+			Peers:     v.GetString(RaftPeers),
 		},
 		Server: ServerConf{
 			IP:   v.GetString(ServerIP),
 			Port: v.GetInt(ServerPort),
 		},
 	}
+}
+
+type Peer struct {
+	ID      string
+	Address string
+}
+
+func (c *Config) Peers() []Peer {
+	peers := []Peer{
+		{
+			ID:      c.Raft.NodeId,
+			Address: c.RaftAddress(),
+		},
+	}
+
+	if len(c.Raft.Peers) == 0 {
+		return peers
+	}
+
+	peerItems := strings.Split(strings.TrimSpace(c.Raft.Peers), ",")
+	for _, peerItem := range peerItems {
+		element := strings.Split(strings.TrimSpace(peerItem), "#")
+		if len(element) != 2 {
+			log.Fatal("failed to parse peers, must be ID1#Address1,ID2#Address2 format")
+		}
+		if element[1] != c.RaftAddress() {
+			peers = append(peers, Peer{
+				ID:      element[0],
+				Address: element[1],
+			})
+		}
+	}
+
+	return peers
+}
+
+func (c *Config) RaftAddress() string {
+	return fmt.Sprintf("%s:%d", c.Raft.IP, c.Raft.Port)
 }

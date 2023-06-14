@@ -34,8 +34,6 @@ func main() {
 		}
 	}()
 
-	var raftBinAddr = fmt.Sprintf("%s:%d", conf.Raft.IP, conf.Raft.Port)
-
 	raftConf := raft.DefaultConfig()
 	raftConf.LocalID = raft.ServerID(conf.Raft.NodeId)
 	raftConf.SnapshotThreshold = 1024
@@ -61,13 +59,13 @@ func main() {
 		return
 	}
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", raftBinAddr)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", conf.RaftAddress())
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	transport, err := raft.NewTCPTransport(raftBinAddr, tcpAddr, config.DefaultMaxPool, config.DefaultTcpTimeout, os.Stdout)
+	transport, err := raft.NewTCPTransport(conf.RaftAddress(), tcpAddr, config.DefaultMaxPool, config.DefaultTcpTimeout, os.Stdout)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -79,19 +77,17 @@ func main() {
 		return
 	}
 
-	// always start single server as a leader
-	configuration := raft.Configuration{
-		Servers: []raft.Server{
-			{
-				ID:      raft.ServerID(conf.Raft.NodeId),
-				Address: transport.LocalAddr(),
-			},
-		},
+	configuration := raft.Configuration{}
+	for _, peer := range conf.Peers() {
+		configuration.Servers = append(configuration.Servers, raft.Server{
+			Suffrage: raft.Voter,
+			ID:       raft.ServerID(peer.ID),
+			Address:  raft.ServerAddress(peer.Address),
+		})
 	}
 
 	raftServer.BootstrapCluster(configuration)
 
-	fmt.Println("ff", conf)
 	srv := server.New(fmt.Sprintf("%s:%d", conf.Server.IP, conf.Server.Port), badgerDB, raftServer)
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)

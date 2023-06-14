@@ -27,6 +27,7 @@ const (
 	RaftIP     = "RAFT_IP"
 	RaftPort   = "RAFT_PORT"
 	RaftVolDir = "RAFT_VOL_DIR"
+	RaftPeers  = "RAFT_PEERS"
 )
 
 var ConfKeys = []string{
@@ -36,4 +37,5 @@ var ConfKeys = []string{
 	RaftIP,
 	RaftPort,
 	RaftVolDir,
+	RaftPeers,
 }

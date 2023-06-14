@@ -7,9 +7,9 @@ A simple raft example based on [hashicorp/raft](https:///github.com/hashicorp/ra
 Then run 3 server with different program in different terminal tab:
 
 ```bash
-$ SERVER_PORT=20001 RAFT_NODE_ID=node1 RAFT_PORT=10001 RAFT_VOL_DIR=/tmp/node_1_data go run main.go
-$ SERVER_PORT=20002 RAFT_NODE_ID=node2 RAFT_PORT=10002 RAFT_VOL_DIR=/tmp/node_2_data go run main.go
-$ SERVER_PORT=20003 RAFT_NODE_ID=node3 RAFT_PORT=10003 RAFT_VOL_DIR=/tmp/node_3_data go run main.go
+$ SERVER_PORT=20001 RAFT_NODE_ID=node1 RAFT_PORT=10001 RAFT_VOL_DIR=/tmp/node_1_data RAFT_PEERS=node1#127.0.0.1:10001,node2#127.0.0.1:10002,node3#127.0.0.1:10003 go run main.go
+$ SERVER_PORT=20002 RAFT_NODE_ID=node2 RAFT_PORT=10002 RAFT_VOL_DIR=/tmp/node_2_data RAFT_PEERS=node1#127.0.0.1:10001,node2#127.0.0.1:10002,node3#127.0.0.1:10003 go run main.go
+$ SERVER_PORT=20003 RAFT_NODE_ID=node3 RAFT_PORT=10003 RAFT_VOL_DIR=/tmp/node_3_data RAFT_PEERS=node1#127.0.0.1:10001,node2#127.0.0.1:10002,node3#127.0.0.1:10003 go run main.go
 ```
 
 ## Creating clusters
