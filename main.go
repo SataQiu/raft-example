@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
@@ -88,10 +90,43 @@ func main() {
 
 	raftServer.BootstrapCluster(configuration)
 
+	// 启用基于 leader 选举的示例业务服务
+	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		started := false
+		for leader := range raftServer.LeaderCh() {
+			if leader && !started {
+				log.Println("Become Leader")
+				go DoBusiness(ctx)
+			}
+			if !leader && started {
+				log.Println("Lost Leader")
+				return
+			}
+		}
+	}()
+
 	srv := server.New(fmt.Sprintf("%s:%d", conf.Server.IP, conf.Server.Port), badgerDB, raftServer)
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
 	}
 
 	return
+}
+
+func DoBusiness(ctx context.Context) {
+	ticker := time.NewTicker(time.Second * 5)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Business terminated")
+			return
+		case t := <-ticker.C:
+			log.Printf("Do business at %v\n", t)
+		}
+	}
 }
